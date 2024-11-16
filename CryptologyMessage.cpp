@@ -1,8 +1,7 @@
-﻿// CryptologyMessage.cpp : 애플리케이션의 진입점을 정의합니다.
-//
-
+﻿#include "CryptologyMessage.h"
 #include "Log.h"
-#include "CryptologyMessage.h"
+#include "StrToImage.h"
+#include "TimeUtil.h"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -13,6 +12,8 @@
 #include <csignal>
 #include <cstring>
 #include <sstream>
+
+#define PIXEL_SIZE 20 // 한 글자당 픽셀 크기
 
 std::vector<int> MessageSystem::clients;
 std::mutex MessageSystem::clientsMutex;
@@ -26,16 +27,88 @@ void MessageSystem::BroadcastMessage(const ClientIdenty& sender, const std::stri
 {
     std::lock_guard<std::mutex> guard(clientsMutex);
 
-    std::string fullMessage = sender.name + ": " + message;
+    // 한국 현재 시간 가져오기
+    std::time_t now = std::time(nullptr);
+    std::tm* localTime = std::localtime(&now);
+    localTime->tm_hour += 9;
+    std::time_t adjustedTime = std::mktime(localTime);
+    std::tm* koreaTime = std::localtime(&adjustedTime);
+
+    // 금지 시간대 확인 (23:59:00 ~ 00:01:00)
+    if ((koreaTime->tm_hour == 23 && koreaTime->tm_min == 59) ||
+        (koreaTime->tm_hour == 0 && koreaTime->tm_min <= 1))
+    {
+        std::string banMessage = "현재 채팅 금지 시간입니다. 메시지를 전송할 수 없습니다.";
+        std::string fullMessage = "[" + sender.name + "] : " + banMessage;
+
+        for (int client : clients)
+        {
+            if (client != sender.id)
+                send(client, fullMessage.c_str(), fullMessage.length(), 0);
+        }
+        return;
+    }
+
+    // 메시지를 암호화
+    int bit_length = message.length() * 8;
+    unsigned char* bit_array = (unsigned char*)malloc(bit_length * sizeof(unsigned char));
+
+    if (!bit_array)
+    {
+        // 메모리 할당 실패 시 사용자에게 알림
+        std::string errorMessage = "메시지를 처리하는 데 실패했습니다.";
+        std::string fullMessage = "[" + sender.name + "] : " + errorMessage;
+
+        for (int client : clients)
+        {
+            if (client != sender.id)
+                send(client, fullMessage.c_str(), fullMessage.length(), 0);
+        }
+        return;
+    }
+
+    StrToImage::StrToBit(message.c_str(), bit_array, &bit_length);
+
+    // 암호화된 메시지를 문자열로 변환
+    char* encrypted_message = (char*)malloc((bit_length / 8) + 1);
+
+    if (!encrypted_message)
+    {
+        free(bit_array);
+
+        // 메모리 할당 실패 시 사용자에게 알림
+        std::string errorMessage = "메시지를 처리하는 데 실패했습니다.";
+        std::string fullMessage = "[" + sender.name + "] : " + errorMessage;
+
+        for (int client : clients)
+        {
+            if (client != sender.id)
+                send(client, fullMessage.c_str(), fullMessage.length(), 0);
+        }
+        return;
+    }
+
+    StrToImage::BitToStr(bit_array, bit_length, encrypted_message);
+
+    // 현재 시간 가져오기
+    std::string currentTime = TimeUtil::GetKoreaCurrentDateTime();
+
+    // 메시지 포맷
+    std::string fullMessage = "[" + currentTime + "] " + sender.name + " : " + encrypted_message;
+
+    free(bit_array);
+    free(encrypted_message);
+
+    // 종료를 알리는 텍스트 추가
+    fullMessage.append("\n\n\n\n\n");
 
     for (int client : clients)
     {
-        if (client != sender.id)  // 발신자에게는 메시지를 보내지 않음
-        {
+        if (client != sender.id)
             send(client, fullMessage.c_str(), fullMessage.length(), 0);
-        }
     }
 }
+
 
 void MessageSystem::HandleClient(int clientSocket)
 {

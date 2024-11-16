@@ -1,3 +1,5 @@
+ï»¿#include "BitChanger.h"
+
 #include <iostream>
 #include <string>
 #include <thread>
@@ -6,38 +8,13 @@
 #include <windows.h>
 #include <io.h>
 #include <fcntl.h>
+#include <fstream>
 
 #pragma comment(lib, "Ws2_32.lib")
 
-// À¯´ÏÄÚµå ¹®ÀÚ¿­À» UTF-8·Î º¯È¯ÇÏ´Â ÇÔ¼ö
-std::string UnicodeToUTF8(const std::wstring& wstr)
+void ReceiveMessages(SOCKET serverSocket, const std::wstring& userName)
 {
-    int bufferSize = WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
-    if (bufferSize == 0)
-    {
-        return "";
-    }
-    std::string utf8Str(bufferSize - 1, 0);  // ³Î ¹®ÀÚ´Â Á¦¿Ü
-    WideCharToMultiByte(CP_UTF8, 0, wstr.c_str(), -1, &utf8Str[0], bufferSize, NULL, NULL);
-    return utf8Str;
-}
-
-// UTF-8 ¹®ÀÚ¿­À» À¯´ÏÄÚµå·Î º¯È¯ÇÏ´Â ÇÔ¼ö
-std::wstring UTF8ToUnicode(const std::string& str)
-{
-    int bufferSize = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, NULL, 0);
-    if (bufferSize == 0)
-    {
-        return L"";
-    }
-    std::wstring wstr(bufferSize - 1, 0);  // ³Î ¹®ÀÚ´Â Á¦¿Ü
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, &wstr[0], bufferSize);
-    return wstr;
-}
-
-void ReceiveMessages(SOCKET serverSocket)
-{
-    char buffer[1024];
+    char buffer[4096];
     int result;
 
     while (true)
@@ -46,110 +23,161 @@ void ReceiveMessages(SOCKET serverSocket)
         if (result > 0)
         {
             buffer[result] = '\0';
-            std::string utf8Str(buffer);
-            std::wstring message = UTF8ToUnicode(utf8Str);
-            std::wcout << message << std::endl;
+            std::string receivedMessage(buffer);
+
+            // ì¢…ë£Œ í…ìŠ¤íŠ¸ í™•ì¸
+            size_t endPosition = receivedMessage.find("\n\n\n\n\n");
+            if (endPosition == std::string::npos)
+            {
+                continue;
+            }
+
+            // ì¢…ë£Œ í…ìŠ¤íŠ¸ ì œê±°
+            receivedMessage = receivedMessage.substr(0, endPosition);
+
+            // ë©”ì‹œì§€ êµ¬ë¬¸ ë¶„ì„
+            size_t delimiterPosition = receivedMessage.find(" : ");
+            if (delimiterPosition != std::string::npos)
+            {
+                std::string senderName = receivedMessage.substr(0, delimiterPosition);
+                std::string encryptedContent = receivedMessage.substr(delimiterPosition + 3);
+
+                // ì•”í˜¸í™”ëœ ë‚´ìš©ì„ ë³µí˜¸í™”
+                int bit_length = encryptedContent.size() * 8;
+                unsigned char* bit_array = (unsigned char*)malloc(bit_length * sizeof(unsigned char));
+                if (!bit_array)
+                {
+                    std::wcout << L"ë©”ëª¨ë¦¬ í• ë‹¹ ì‹¤íŒ¨" << std::endl;
+                    continue;
+                }
+
+                // ë¹„íŠ¸ ë°°ì—´ë¡œ ë³€í™˜
+                BitChanger::StrToBit(encryptedContent.c_str(), bit_array, &bit_length);
+
+                // ë³µí˜¸í™”ëœ ë¬¸ìžì—´ë¡œ ë³€í™˜
+                char* decryptedMessage = (char*)malloc((bit_length / 8) + 1);
+                if (!decryptedMessage)
+                {
+                    std::wcout << L"ë©”ëª¨ë¦¬ í• ë‹¹ ì‹¤íŒ¨" << std::endl;
+                    free(bit_array);
+                    continue;
+                }
+                BitChanger::BitToStr(bit_array, bit_length, decryptedMessage);
+
+                // ë³´ë‚¸ ì‚¬ëžŒê³¼ ë©”ì‹œì§€ ë‚´ìš© ì¶œë ¥
+                std::wcout << BitChanger::UTF8ToUnicode(senderName) << L" : " << BitChanger::UTF8ToUnicode(decryptedMessage) << std::endl;
+
+                free(bit_array);
+                free(decryptedMessage);
+            }
         }
         else if (result == 0)
         {
-            std::wcout << L"¼­¹ö ¿¬°áÀÌ Á¾·áµÇ¾ú½À´Ï´Ù." << std::endl;
+            std::wcout << L"ì„œë²„ ì—°ê²°ì´ ì¢…ë£Œë˜ì—ˆìŠµë‹ˆë‹¤." << std::endl;
             break;
         }
         else
         {
-            std::wcout << L"¸Þ½ÃÁö ¼ö½Å ¿À·ù: " << WSAGetLastError() << std::endl;
+            std::wcout << L"ë©”ì‹œì§€ ìˆ˜ì‹  ì˜¤ë¥˜: " << WSAGetLastError() << std::endl;
             break;
         }
     }
 }
 
+
 int main()
 {
-    // ÄÜ¼Ö ÀÔÃâ·Â ÀÎÄÚµù ¼³Á¤
+    // ì½˜ì†” ìž…ì¶œë ¥ ì¸ì½”ë”© ì„¤ì •
     _setmode(_fileno(stdout), _O_U16TEXT);
     _setmode(_fileno(stdin), _O_U16TEXT);
 
     WSADATA wsaData;
     SOCKET serverSocket = INVALID_SOCKET;
     struct sockaddr_in serverAddr;
-    std::string serverIP = "158.179.172.143";  // ¼­¹öÀÇ IP ÁÖ¼Ò¸¦ ÀÔ·ÂÇÏ¼¼¿ä.
-    int serverPort = 7858;                 // ¼­¹öÀÇ Æ÷Æ® ¹øÈ£¸¦ ÀÔ·ÂÇÏ¼¼¿ä.
+    std::string serverIP = "158.179.172.143";  // ì„œë²„ì˜ IP ì£¼ì†Œë¥¼ ìž…ë ¥í•˜ì„¸ìš”.
+    int serverPort = 7858;                 // ì„œë²„ì˜ í¬íŠ¸ ë²ˆí˜¸ë¥¼ ìž…ë ¥í•˜ì„¸ìš”.
 
-    // Winsock ÃÊ±âÈ­
+    // Winsock ì´ˆê¸°í™”
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData);
+
     if (result != 0)
     {
-        std::wcout << L"WSAStartup ½ÇÆÐ: " << result << std::endl;
+        std::wcout << L"WSAStartup ì‹¤íŒ¨: " << result << std::endl;
         return 1;
     }
 
-    // ¼­¹ö ¼ÒÄÏ »ý¼º
+    // ì„œë²„ ì†Œì¼“ ìƒì„±
     serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
     if (serverSocket == INVALID_SOCKET)
     {
-        std::wcout << L"¼ÒÄÏ »ý¼º ½ÇÆÐ: " << WSAGetLastError() << std::endl;
+        std::wcout << L"ì†Œì¼“ ìƒì„± ì‹¤íŒ¨: " << WSAGetLastError() << std::endl;
         WSACleanup();
         return 1;
     }
 
-    // ¼­¹ö ÁÖ¼Ò ¼³Á¤
+    // ì„œë²„ ì£¼ì†Œ ì„¤ì •
     serverAddr.sin_family = AF_INET;
     inet_pton(AF_INET, serverIP.c_str(), &serverAddr.sin_addr);
     serverAddr.sin_port = htons(serverPort);
 
-    // ¼­¹ö¿¡ ¿¬°á
+    // ì„œë²„ì— ì—°ê²°
     result = connect(serverSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr));
+
     if (result == SOCKET_ERROR)
     {
-        std::wcout << L"¼­¹ö¿¡ ¿¬°áÇÒ ¼ö ¾ø½À´Ï´Ù: " << WSAGetLastError() << std::endl;
+        std::wcout << L"ì„œë²„ì— ì—°ê²°í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤: " << WSAGetLastError() << std::endl;
         closesocket(serverSocket);
         WSACleanup();
         return 1;
     }
 
-    std::wcout << L"¼­¹ö¿¡ ¿¬°áµÇ¾ú½À´Ï´Ù." << std::endl;
+    std::wcout << L"ì„œë²„ì— ì—°ê²°ë˜ì—ˆìŠµë‹ˆë‹¤." << std::endl;
 
-    // »ç¿ëÀÚ ÀÌ¸§ ÀÔ·Â ¹× Àü¼Û
+    // ì‚¬ìš©ìž ì´ë¦„ ìž…ë ¥ ë° ì „ì†¡
     std::wstring name;
-    std::wcout << L"»ç¿ëÀÚ ÀÌ¸§À» ÀÔ·ÂÇÏ¼¼¿ä: ";
+    std::wcout << L"ì‚¬ìš©ìž ì´ë¦„ì„ ìž…ë ¥í•˜ì„¸ìš”: ";
     std::getline(std::wcin, name);
 
-    std::string utf8Name = UnicodeToUTF8(name);
+    std::string utf8Name = BitChanger::UnicodeToUTF8(name);
     result = send(serverSocket, utf8Name.c_str(), utf8Name.length(), 0);
+
     if (result == SOCKET_ERROR)
     {
-        std::wcout << L"ÀÌ¸§ Àü¼Û ½ÇÆÐ: " << WSAGetLastError() << std::endl;
+        std::wcout << L"ì´ë¦„ ì „ì†¡ ì‹¤íŒ¨: " << WSAGetLastError() << std::endl;
         closesocket(serverSocket);
         WSACleanup();
         return 1;
     }
 
-    // ¸Þ½ÃÁö ¼ö½Å ¾²·¹µå ½ÃÀÛ
-    std::thread receiveThread(ReceiveMessages, serverSocket);
+    // ë©”ì‹œì§€ ìˆ˜ì‹  ì“°ë ˆë“œ ì‹œìž‘
+    std::thread receiveThread(ReceiveMessages, serverSocket, name);
     receiveThread.detach();
 
-    // ¸Þ½ÃÁö Àü¼Û ·çÇÁ
+    // ë©”ì‹œì§€ ì „ì†¡ ë£¨í”„
     std::wstring message;
+
     while (true)
     {
         std::getline(std::wcin, message);
 
         if (message == L"/exit")
         {
-            std::wcout << L"Ã¤ÆÃÀ» Á¾·áÇÕ´Ï´Ù." << std::endl;
+            std::wcout << L"ì±„íŒ…ì„ ì¢…ë£Œí•©ë‹ˆë‹¤." << std::endl;
             break;
         }
 
-        std::string utf8Message = UnicodeToUTF8(message);
+        std::string utf8Message = BitChanger::UnicodeToUTF8(message);
         result = send(serverSocket, utf8Message.c_str(), utf8Message.length(), 0);
+
         if (result == SOCKET_ERROR)
         {
-            std::wcout << L"¸Þ½ÃÁö Àü¼Û ½ÇÆÐ: " << WSAGetLastError() << std::endl;
+            std::wcout << L"ë©”ì‹œì§€ ì „ì†¡ ì‹¤íŒ¨: " << WSAGetLastError() << std::endl;
             break;
         }
     }
 
-    // ¿¬°á Á¾·á
+    // ì—°ê²° ì¢…ë£Œ
     closesocket(serverSocket);
     WSACleanup();
 

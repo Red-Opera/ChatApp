@@ -2,5 +2,9 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="CryptologyMessageClient.cpp" />
+    <ClCompile Include="BitChanger.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BitChanger.h" />
   </ItemGroup>
 </Project>

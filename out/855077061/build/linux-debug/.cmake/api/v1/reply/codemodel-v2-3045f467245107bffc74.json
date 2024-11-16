@@ -38,7 +38,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "CryptologyMessage::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-CryptologyMessage-Debug-c43d401545098fa5c93a.json",
+					"jsonFile" : "target-CryptologyMessage-Debug-97b06e87c6777989ae30.json",
 					"name" : "CryptologyMessage",
 					"projectIndex" : 0
 				}
@@ -48,8 +48,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/home/ubuntu/CryptologyMessage/CryptologyMessage/out/build/linux-debug",
-		"source" : "/home/ubuntu/CryptologyMessage/CryptologyMessage"
+		"build" : "/home/ubuntu/CryptologyMessage/ChatApp/out/build/linux-debug",
+		"source" : "/home/ubuntu/CryptologyMessage/ChatApp"
 	},
 	"version" : 
 	{
