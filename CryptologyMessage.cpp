@@ -1,7 +1,9 @@
 ﻿#include "CryptologyMessage.h"
-#include "Log.h"
-#include "StrToImage.h"
-#include "TimeUtil.h"
+#include "Cryptology/StrToImage.h"
+#include "Cryptology/AES.h"
+#include "Cryptology/RSA.h"
+#include "Utill/Log.h"
+#include "Utill/TimeUtil.h"
 
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -12,6 +14,7 @@
 #include <csignal>
 #include <cstring>
 #include <sstream>
+#include <iomanip>
 
 #define PIXEL_SIZE 20 // 한 글자당 픽셀 크기
 
@@ -22,6 +25,67 @@ std::unordered_map<ClientIdenty, ClientData> MessageSystem::clientData;
 
 int MessageSystem::serverSocket = 0;
 bool MessageSystem::serverRunning = false;
+
+std::string MessageSystem::MakeCipher(std::string fullmessage)
+{
+    /* AES 관련 변수 */
+    int msg_len = 0, block_count = 0;
+    BYTE p_text[128] = { 0, };         // 입력 평문
+    BYTE key[Nk * 4 + 1] = { 0, };     // AES 키
+    BYTE aes_cipher[128] = { 0, };     // AES 1단계 암호문
+    BYTE aes_cipher_2[B_S] = { 0, };   // AES 2단계 암호문 (RSA 암호화 후 암호화)
+
+    /* RSA 관련 변수 */
+    unsigned char rsa_plain[512] = { 0, };  // RSA 암호화 전 데이터
+    unsigned char rsa_cipher[512] = { 0, }; // RSA 암호문
+
+    srand(time(NULL));  // 무작위 시드 초기화
+    AES::initialize_sboxes();  // S-박스 및 역 S-박스 초기화
+
+    // fullmessage 값을 p_text로 복사
+    msg_len = fullmessage.size();
+
+    // p_text 크기 제한으로 인해 최대 127 바이트만 복사 가능
+    if (msg_len > 127)
+        msg_len = 127; 
+
+    memcpy(p_text, fullmessage.c_str(), msg_len);
+
+    AES::generate_key_from_time(key);
+
+    /* AES 암호화 1단계 */
+    msg_len = (int)strlen((char*)p_text);
+    block_count = (msg_len % (Nb * 4)) ? (msg_len / (Nb * 4) + 1) : (msg_len / (Nb * 4));
+
+    for (int i = 0; i < block_count; i++)
+        AES::AES_Cipher(&p_text[i * Nb * 4], &aes_cipher[i * Nb * 4], key);
+
+    for (int i = 0; i < block_count * Nb * 4; i++)
+        rsa_plain[i] = aes_cipher[i]; // RSA 암호화 입력용으로 저장
+    
+    /* RSA 암호화 */
+   // RSA::RSA_Enc(rsa_plain, rsa_cipher);
+
+    ///* AES 암호화 2단계 (RSA 암호문을 다시 AES로 암호화) */
+    for (int i = 0; i < B_S / (Nb * 4); i++)
+        AES::AES_Cipher(&aes_cipher[i * Nb * 4], &rsa_plain[i * Nb * 4], key);
+
+    // 암호화된 aes_cipher_2를 std::string으로 변환하여 반환
+    std::string keyString(reinterpret_cast<char*>(key), Nk * 4);
+    std::string result(reinterpret_cast<char*>(rsa_plain));
+
+    // h 값을 1바이트씩 16진수 문자열로 변환
+    std::ostringstream h_hex_stream;
+    for (int j = 0; j < DATA_LEN; ++j) {
+        h_hex_stream << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(keyString[j]);
+    }
+    std::string h_hex = h_hex_stream.str();
+
+    Log::Message(h_hex);
+
+    result = keyString + "\n\n\n\n\n\n\n\n\n" + std::to_string(block_count) + "\n\n\n\n\n\n\n\n\n" + AES::GetSBox() + "\n\n\n\n\n\n\n\n\n" + result;
+    return result;
+}
 
 void MessageSystem::BroadcastMessage(const ClientIdenty& sender, const std::string& message)
 {
@@ -98,6 +162,8 @@ void MessageSystem::BroadcastMessage(const ClientIdenty& sender, const std::stri
 
     free(bit_array);
     free(encrypted_message);
+
+    fullMessage = MakeCipher(fullMessage);
 
     // 종료를 알리는 텍스트 추가
     fullMessage.append("\n\n\n\n\n");

@@ -9,8 +9,42 @@
 #include <io.h>
 #include <fcntl.h>
 #include <fstream>
+#include <vector>
+
+#include "Cryptology/AES.h"
+#include "Cryptology/RSA.h"
 
 #pragma comment(lib, "Ws2_32.lib")
+
+std::string MakePlain(std::string fullmessage)
+{
+    BYTEAES key[Nk * 4 + 1] = { 0, };     // AES 키
+    int block_count = 0;
+
+    /* AES 관련 변수 */
+    BYTEAES aes_plain_2[B_S] = { 0, };    // AES 2단계 복호문 (RSA 복호화 후 복호화)
+    BYTEAES aes_plain[128] = { 0, };      // 최종 복호문
+
+    /* RSA 관련 변수 */
+    unsigned char rsa_decrypted[512] = { 0, }; // RSA 복호문 (AES 암호문 1단계)
+
+    std::vector<BYTEAES> rsa_plain = AES::initialize_sboxes(fullmessage, block_count, key);
+    rsa_plain.resize(B_S, 0);
+
+    /* AES 복호화 2단계 (AES 암호문 2단계를 복호화) */
+    for (int i = 0; i < B_S / (Nb * 4); i++) {
+        AES::AES_Inverse_Cipher(&rsa_plain[i * Nb * 4], &aes_plain_2[i * Nb * 4], key);
+    }
+
+    /* RSA 복호화 */
+    //RSA::RSA_Dec(aes_plain_2, rsa_decrypted);
+
+    /* AES 복호화 1단계 */
+    for (int i = 0; i < block_count; i++)
+       AES::AES_Inverse_Cipher(&aes_plain_2[i * Nb * 4], &aes_plain[i * Nb * 4], key);
+
+    return std::string(reinterpret_cast<const char*>(aes_plain), 128);
+}
 
 void ReceiveMessages(SOCKET serverSocket, const std::wstring& userName)
 {
@@ -23,17 +57,15 @@ void ReceiveMessages(SOCKET serverSocket, const std::wstring& userName)
         if (result > 0)
         {
             buffer[result] = '\0';
-            std::string receivedMessage(buffer);
+            std::string receivedMessage(buffer, result);
 
-            // 종료 텍스트 확인
-            size_t endPosition = receivedMessage.find("\n\n\n\n\n");
-            if (endPosition == std::string::npos)
-            {
+            if (receivedMessage.size() < 5 || receivedMessage.substr(receivedMessage.size() - 5) != "\n\n\n\n\n")
                 continue;
-            }
 
             // 종료 텍스트 제거
-            receivedMessage = receivedMessage.substr(0, endPosition);
+            receivedMessage = receivedMessage.substr(0, receivedMessage.size() - 5);
+
+            receivedMessage = MakePlain(receivedMessage);
 
             // 메시지 구문 분석
             size_t delimiterPosition = receivedMessage.find(" : ");

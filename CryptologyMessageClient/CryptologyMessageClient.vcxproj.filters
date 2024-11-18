@@ -3,8 +3,18 @@
   <ItemGroup>
     <ClCompile Include="CryptologyMessageClient.cpp" />
     <ClCompile Include="BitChanger.cpp" />
+    <ClCompile Include="Cryptology\AES.cpp" />
+    <ClCompile Include="Cryptology\RSA.cpp" />
+    <ClCompile Include="Cryptology\rsa_std.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitChanger.h" />
+    <ClInclude Include="Cryptology\AESDefine.h" />
+    <ClInclude Include="Cryptology\AES.h" />
+    <ClInclude Include="Cryptology\RSADefine.h" />
+    <ClInclude Include="Cryptology\RSA.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Cryptology\secret_key.txt" />
   </ItemGroup>
 </Project>

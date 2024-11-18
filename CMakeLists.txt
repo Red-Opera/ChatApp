@@ -12,7 +12,22 @@ endif()
 project ("CryptologyMessage")
 
 # 이 프로젝트의 실행 파일에 소스를 추가합니다.
-add_executable (CryptologyMessage "CryptologyMessage.cpp" "CryptologyMessage.h" "Log.cpp" "Log.h" "Run.cpp" "SBox.cpp" "StrToImage.h" "StrToImage.cpp" "TimeUtil.h" "TimeUtil.cpp" "TimeScheduler.h" "TimeScheduler.cpp")
+add_executable (CryptologyMessage 
+  "CryptologyMessage.cpp" 
+  "CryptologyMessage.h" 
+  "Utill/Log.cpp" 
+  "Utill/Log.h" 
+  "Run.cpp"  
+  "Cryptology/StrToImage.h" 
+  "Cryptology/StrToImage.cpp" 
+  "Utill/TimeUtil.h" 
+  "Utill/TimeUtil.cpp" 
+  "Utill/TimeScheduler.h" 
+  "Utill/TimeScheduler.cpp"
+  "Cryptology/AESDefine.h" 
+  "Cryptology/AES.h" 
+  "Cryptology/AES.cpp"
+ "Cryptology/RSA.h" "Cryptology/RSADefine.h" "Cryptology/RSA.cpp")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET CryptologyMessage PROPERTY CXX_STANDARD 20)
