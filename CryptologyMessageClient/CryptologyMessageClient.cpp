@@ -65,7 +65,8 @@ void ReceiveMessages(SOCKET serverSocket, const std::wstring& userName)
             // 종료 텍스트 제거
             receivedMessage = receivedMessage.substr(0, receivedMessage.size() - 5);
 
-            receivedMessage = MakePlain(receivedMessage);
+            if (receivedMessage.find(" : ") == std::string::npos)
+                receivedMessage = MakePlain(receivedMessage);
 
             // 메시지 구문 분석
             size_t delimiterPosition = receivedMessage.find(" : ");

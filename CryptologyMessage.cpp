@@ -103,11 +103,11 @@ void MessageSystem::BroadcastMessage(const ClientIdenty& sender, const std::stri
         (koreaTime->tm_hour == 0 && koreaTime->tm_min <= 1))
     {
         std::string banMessage = "현재 채팅 금지 시간입니다. 메시지를 전송할 수 없습니다.";
-        std::string fullMessage = "[" + sender.name + "] : " + banMessage;
+        std::string fullMessage = "[" + sender.name + "] : " + banMessage + "\n\n\n\n\n";
 
         for (int client : clients)
         {
-            if (client != sender.id)
+            if (client == sender.id)
                 send(client, fullMessage.c_str(), fullMessage.length(), 0);
         }
         return;
