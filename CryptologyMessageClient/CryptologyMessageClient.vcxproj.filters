@@ -1,11 +1,11 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="CryptologyMessageClient.cpp" />
     <ClCompile Include="BitChanger.cpp" />
     <ClCompile Include="Cryptology\AES.cpp" />
     <ClCompile Include="Cryptology\RSA.cpp" />
     <ClCompile Include="Cryptology\rsa_std.c" />
+    <ClCompile Include="CodeCrypotology\CodeCrypotology.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BitChanger.h" />

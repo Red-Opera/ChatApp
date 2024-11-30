@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{8cba00e6-f741-458c-a4eb-f3151e905486}</ProjectGuid>
-    <RootNamespace>CryptologyMessageClient</RootNamespace>
+    <ProjectGuid>{3801c109-2967-4f43-9a77-d8cf72f0a71d}</ProjectGuid>
+    <RootNamespace>GetEXECode</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -104,7 +104,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <DisableSpecificWarnings>4996; 6031;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,7 +118,6 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <DisableSpecificWarnings>4996; 6031;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,25 +127,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BitChanger.cpp" />
-    <ClCompile Include="Cryptology\AES.cpp" />
-    <ClCompile Include="Cryptology\RSA.cpp" />
-    <ClCompile Include="Cryptology\rsa_std.c">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="CodeCrypotology\CodeCrypotology.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-    </ClCompile>
+    <Text Include="CipherCode.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BitChanger.h" />
-    <ClInclude Include="Cryptology\AES.h" />
-    <ClInclude Include="Cryptology\AESDefine.h" />
-    <ClInclude Include="Cryptology\RSA.h" />
-    <ClInclude Include="Cryptology\RSADefine.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Cryptology\secret_key.txt" />
+    <ClCompile Include="GetEXECode.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

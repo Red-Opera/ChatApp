@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CryptologyMessageClient", "CryptologyMessageClient.vcxproj", "{8CBA00E6-F741-458C-A4EB-F3151E905486}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GetEXECode", "..\GetEXECode\GetEXECode.vcxproj", "{3801C109-2967-4F43-9A77-D8CF72F0A71D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +23,14 @@ Global
 		{8CBA00E6-F741-458C-A4EB-F3151E905486}.Release|x64.Build.0 = Release|x64
 		{8CBA00E6-F741-458C-A4EB-F3151E905486}.Release|x86.ActiveCfg = Release|Win32
 		{8CBA00E6-F741-458C-A4EB-F3151E905486}.Release|x86.Build.0 = Release|Win32
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Debug|x64.ActiveCfg = Debug|x64
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Debug|x64.Build.0 = Debug|x64
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Debug|x86.ActiveCfg = Debug|Win32
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Debug|x86.Build.0 = Debug|Win32
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Release|x64.ActiveCfg = Release|x64
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Release|x64.Build.0 = Release|x64
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Release|x86.ActiveCfg = Release|Win32
+		{3801C109-2967-4F43-9A77-D8CF72F0A71D}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
